@@ -17,8 +17,8 @@ public:
     CREATE_FUNC(ScenePause);
 
 private:
-	cocos2d Director *_director;
-	cocos2d Size _visibleSize;    
+	cocos2d::Director *_director;
+	cocos2d::Size _visibleSize;    
 };
 
 #endif // __SCENE_PAUSE_H__
