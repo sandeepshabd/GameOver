@@ -1,6 +1,11 @@
 #include "PlayScene.h"
 #include "ScenePause.h"
 
+#include <iostream>
+#include <string>
+#include <exception>
+#include <stdexcept>
+
 USING_NS_CC;
 
 Scene* PlayScene::createScene()
@@ -24,14 +29,31 @@ Scene* PlayScene::createScene()
     return scene;
 }
 
-bool PlayScene::onCollision(PhysicsContact& contact)
+bool PlayScene::onCollision(cocos2d::PhysicsContact& contact)
 {
 	CCLOG("Collision detected");
 
 	//_sprBomb->setVisible(false);	
-	auto body = _sprBomb -> getPhysicsBody();
-	body->setVelocity(Vect());
-	body->applyTorque(100900.5f);	
+	try{
+		//_sprBomb->setVisible(false);	
+		 auto body = _sprBomb -> getPhysicsBody();
+		//_sprBomb->getPhysicsBody()->setVelocity(Vect(0,10));
+		//_sprBomb->getPhysicsBody()->setVelocity(Vect(0,10));	
+		body->setVelocity(Vect());
+		//body->applyImpulse(Vect(10000,0));
+		//body->applyForce(Vect(1000,0));
+		body->applyTorque(100900.5f);	
+		body->setVelocity(Vect(-40,50));
+	}catch(const std::exception& e) {
+        std::cout << "Caught exception \"" << e.what() << "\"\n";
+    }catch (...)
+	{
+    // well ok, still unknown what to do now, 
+    // but a std::exception_ptr doesn't help the situation either.
+    	std::cerr << "unknown exception\n";
+	}
+	
+
 	return false;
 }
 
@@ -45,9 +67,19 @@ void PlayScene::setPhysicsBody(cocos2d::Sprite* sprite)
 
 void PlayScene::initPhysics()
 {
-	auto contactListener = EventListenerPhysicsContact::create();
-	contactListener->onContactBegin = CC_CALLBACK_1(PlayScene::onCollision,this);
-	getEventDispatcher() ->addEventListenerWithSceneGraphPriority(contactListener,this);
+	try{
+		auto contactListener = EventListenerPhysicsContact::create();
+		contactListener->onContactBegin = CC_CALLBACK_1(PlayScene::onCollision,this);
+		getEventDispatcher()->addEventListenerWithSceneGraphPriority(contactListener,this);
+	}catch(const std::exception& e) {
+        std::cout << "Caught exception \"" << e.what() << "\"\n";
+    }catch (...)
+	{
+    // well ok, still unknown what to do now, 
+    // but a std::exception_ptr doesn't help the situation either.
+    	std::cerr << "unknown exception\n";
+	}
+
 	
 }
 
@@ -75,7 +107,7 @@ bool PlayScene::init()
     this->addChild(menu, 1);
 
 
-	auto _sprBomb = Sprite::create("bomb.png");	
+	 _sprBomb = Sprite::create("bomb.png");	
 	_sprBomb -> setPosition(Vec2(_visibleSize.width / 4, _visibleSize.height + _sprBomb -> getContentSize().height/2));
 	this->addChild(_sprBomb,1);
 
@@ -110,6 +142,7 @@ bool PlayScene::init()
 	setPhysicsBody(_sprBomb);	
 	initPhysics();	
 	_sprBomb->getPhysicsBody()->setVelocity(Vect(0,-100));	
+	//_sprBomb->getPhysicsBody()->setLinearDamping(0.1f);
 
     return true;
 }
