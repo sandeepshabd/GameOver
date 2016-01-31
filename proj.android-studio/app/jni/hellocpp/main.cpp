@@ -11,5 +11,25 @@ using namespace cocos2d;
 
 void cocos_android_app_init (JNIEnv* env) {
     LOGD("cocos_android_app_init");
-    AppDelegate *pAppDelegate = new AppDelegate();
+    try{
+		AppDelegate *pAppDelegate = new AppDelegate();
+    }catch(MyCxxException e){
+    	throwJavaException (env, e.what());
+    }
+
+    
+}
+
+void throwJavaException(JNIEnv *env, const char *msg)
+{
+    // You can put your own exception here
+    jclass c = env->FindClass("java/lang/RuntimeException");
+
+    if (NULL == c)
+    {
+        //B plan: null pointer ...
+        c = env->FindClass("java/lang/NullPointerException");
+    }
+
+    env->ThrowNew(c, msg);
 }

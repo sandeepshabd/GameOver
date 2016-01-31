@@ -43,12 +43,12 @@ bool AppDelegate::applicationDidFinishLaunching() {
 
         //glview->setFrameSize(1080, 1920);
         glview = GLViewImpl::create("GameOver");
-        glview->setFrameSize(1920, 1080);
+        glview->setFrameSize(1080, 1920);
         director->setOpenGLView(glview);
     }
 
   Size screenSize = glview->getFrameSize();
-    Size designSize(1920, 1080);
+    Size designSize(768, 1280);
     std::vector<std::string> searchPaths;   
 
     if (screenSize.height > 800){
