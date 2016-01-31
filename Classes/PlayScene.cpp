@@ -1,5 +1,8 @@
 #include "PlayScene.h"
 #include "ScenePause.h"
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
+#include "../cocos2d/cocos/platform/android/jni/Java_org_cocos2dx_lib_Cocos2dxHelper.h"
+#endif
 
 #include <iostream>
 #include <string>
@@ -83,6 +86,46 @@ void PlayScene::initPhysics()
 	
 }
 
+void PlayScene::movePlayerByTouch(Touch* touch, Event* event)
+{
+	Vec2 touchLocation = touch->getLocation();
+	if(_sprPlayer->getBoundingBox().containsPoint(touchLocation)){
+		movePlayerIfPossible(touchLocation.x);
+	}
+}
+
+void PlayScene::movePlayerIfPossible(float newX){
+	float sprHalfWidth = _sprPlayer->getBoundingBox().size.width /2 ;
+	if(newX >= sprHalfWidth && newX < (_visibleSize.width - sprHalfWidth)){
+		_sprPlayer->setPositionX(newX);
+	}
+}
+
+
+void PlayScene::initTouch()
+{
+	auto listener = EventListenerTouchOneByOne::create();
+	listener->onTouchBegan = [](Touch* touch, Event* event){return true;};
+	listener->onTouchMoved = CC_CALLBACK_2(PlayScene::movePlayerByTouch,this);
+	listener->onTouchEnded = [=](Touch* touch, Event* event){};
+	_eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
+}
+
+
+void PlayScene::movePlayerByAccelerometer(cocos2d::Acceleration* acceleration, cocos2d::Event* event)
+{
+	movePlayerIfPossible(_sprPlayer->getPositionX() + (acceleration->x * 10));
+}
+
+
+
+void PlayScene::initAccelerometer()
+{
+	Device::setAccelerometerEnabled(true);
+	auto listener = EventListenerAcceleration::create(CC_CALLBACK_2(PlayScene::movePlayerByAccelerometer, this));
+	_eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
+}
+
 // on "init" you need to initialize your instance
 bool PlayScene::init()
 {
@@ -117,20 +160,20 @@ bool PlayScene::init()
 	this->addChild(bg, -1);
 
 
-	auto sprPlayer = Sprite::create("player.png");	
-	sprPlayer->setPosition(Vec2(_visibleSize.width / 4, _visibleSize.height * 0.23));
-	setPhysicsBody(sprPlayer);
-	this->addChild(sprPlayer, 0);
+	_sprPlayer = Sprite::create("player.png");	
+	_sprPlayer->setPosition(Vec2(_visibleSize.width / 4, _visibleSize.height * 0.23));
+	setPhysicsBody(_sprPlayer);
+	this->addChild(_sprPlayer, 0);
 
 
 	//Animations
 	Vector<SpriteFrame*> frames;
-	Size playerSize = sprPlayer->getContentSize();
+	Size playerSize = _sprPlayer->getContentSize();
 	frames.pushBack(SpriteFrame::create("player.png", Rect(0, 0, playerSize.width, playerSize.height)));
 	frames.pushBack(SpriteFrame::create("player2.png", Rect(0, 0, playerSize.width, playerSize.height)));
 	auto animation = Animation::createWithSpriteFrames(frames,0.2f);
 	auto animate = Animate::create(animation);
-	sprPlayer->runAction(RepeatForever::create(animate));
+	_sprPlayer->runAction(RepeatForever::create(animate));
 	
 	
 	// //actions
@@ -142,6 +185,12 @@ bool PlayScene::init()
 	setPhysicsBody(_sprBomb);	
 	initPhysics();	
 	_sprBomb->getPhysicsBody()->setVelocity(Vect(0,-100));	
+	initTouch();
+	initAccelerometer();
+	#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
+		setKeepScreenOnJni(true);
+	#endif
+	initBackButtonListener();
 	//_sprBomb->getPhysicsBody()->setLinearDamping(0.1f);
 
     return true;
@@ -153,4 +202,18 @@ bool PlayScene::init()
 
 void PlayScene::callbackOnPause(cocos2d::Ref* pSender){
 	_director->pushScene(TransitionFlipX::create(1.0, ScenePause::createScene()));
+}
+
+
+void PlayScene::initBackButtonListener(){
+    auto listener = EventListenerKeyboard::create();
+    listener->onKeyPressed = [=](EventKeyboard::KeyCode keyCode, Event* event){};
+    listener->onKeyReleased = CC_CALLBACK_2(PlayScene::onKeyPressed, this);
+    _eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
+}
+
+void PlayScene::onKeyPressed(EventKeyboard::KeyCode keyCode, Event* event){
+	if(keyCode == EventKeyboard::KeyCode::KEY_BACK){
+		Director::getInstance()->end();
+	}
 }
